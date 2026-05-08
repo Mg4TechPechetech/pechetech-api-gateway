@@ -30,20 +30,22 @@ export class ProxyModule implements NestModule {
         createProxyMiddleware({
           target: 'http://pechetech-predictive-weather-service:8000',
           changeOrigin: true,
-          onProxyReq: (proxyReq, req: any, res) => {
-            // Business Logic: Check if user has PREMIUM plan to access market predictions
-            const user = req.user; // Injected by JwtAuthGuard
-            if (req.url.includes('/market') && user?.plan !== 'PREMIUM') {
-              res.status(403).json({ 
-                error: 'Premium Plan Required', 
-                message: 'Access to predictive market prices requires the IA Prédictive Premium subscription.' 
-              });
-              // This is a naive way to block proxying, typically done via proper NestJS Guards
-              // but demonstrated here in the proxy layer for the business model requirement.
-              return;
+          on: {
+            proxyReq: (proxyReq, req: any, res) => {
+              // Business Logic: Check if user has PREMIUM plan to access market predictions
+              const user = req.user; // Injected by JwtAuthGuard
+              if (req.url.includes('/market') && user?.plan !== 'PREMIUM') {
+                (res as any).status(403).json({ 
+                  error: 'Premium Plan Required', 
+                  message: 'Access to predictive market prices requires the IA Prédictive Premium subscription.' 
+                });
+                return;
+              }
+
             }
           }
         })
+
       )
       .forRoutes('/api/v1/predictions');
     // 5. Proxy to Blockchain Service (Traceability / Système à la part)

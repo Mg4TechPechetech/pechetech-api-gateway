@@ -1,35 +1,30 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
-
-export interface UserPayload {
-  userId: string;
-  role: 'PECHEUR' | 'PROPRIETAIRE' | 'GIE' | 'MAREYEUSE';
-  plan: 'FREE' | 'PREMIUM';
-}
+import { FirebaseService } from './firebase.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  constructor(private readonly firebaseService: FirebaseService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
     if (!authHeader) {
-      // Allow unauthenticated for public routes (e.g. login)
-      // In a real API Gateway, we might block everything except /auth
       throw new UnauthorizedException('Missing Authorization Header');
     }
 
     const token = authHeader.split(' ')[1];
     try {
-      // Mock validation for business plan demonstration
-      // In prod, use standard secret or JWKS
-      const decoded = jwt.decode(token) as UserPayload;
-      if (!decoded) throw new Error();
-      
-      request.user = decoded;
+      const decodedToken = await this.firebaseService.verifyToken(token);
+      request.user = {
+        userId: decodedToken.uid,
+        email: decodedToken.email,
+        // We can map more fields or fetch user from DB here
+      };
       return true;
     } catch (e) {
-      throw new UnauthorizedException('Invalid Token');
+      throw new UnauthorizedException('Invalid Firebase Token');
     }
   }
 }
+
