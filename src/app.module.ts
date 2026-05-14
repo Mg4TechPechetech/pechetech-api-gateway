@@ -17,7 +17,10 @@ import { AuthMiddleware } from './middleware/auth.middleware';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(AuthMiddleware)
+      .apply((req, res, next) => {
+        console.log(`[GATEWAY] ${req.method} ${req.url}`);
+        next();
+      }, AuthMiddleware)
       .forRoutes('*');
   }
 }
