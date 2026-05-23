@@ -29,6 +29,29 @@ export class ProxyModule implements NestModule {
       }))
       .forRoutes('/api/v1/expenses');
 
+    // 1.b Proxy to Benefit Service (Distribution des bénéfices)
+    consumer
+      .apply(createProxyMiddleware({ 
+        target: 'http://127.0.0.1:3000', 
+        changeOrigin: true,
+        pathRewrite: (path) => '/distribution' + path.replace(/\/$/, ''),
+        on: {
+          proxyReq: (proxyReq, req: any, res) => {
+            if (req.body) {
+              const bodyData = JSON.stringify(req.body);
+              proxyReq.setHeader('Content-Type', 'application/json');
+              proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+              proxyReq.write(bodyData);
+            }
+            console.log(`[PROXY-DISTRIBUTION] Forwarding ${req.method} ${req.url} -> ${proxyReq.path}`);
+          },
+          error: (err, req, res) => {
+            console.error('[PROXY-DISTRIBUTION] Error:', err.message);
+          }
+        }
+      }))
+      .forRoutes('/api/v1/distribution');
+
     // 2. Proxy to Fuel Service (Micro-Commissions 0.5%)
     consumer
       .apply(
