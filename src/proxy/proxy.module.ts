@@ -66,7 +66,7 @@ export class ProxyModule implements NestModule {
       .apply(createProxyMiddleware({ 
         target: 'http://127.0.0.1:8001', 
         changeOrigin: true,
-        pathRewrite: { '^/api/v1/ocr': '' }, // Map /api/v1/ocr -> /
+        pathRewrite: (path, req: any) => req.originalUrl,
         on: {
           proxyReq: (proxyReq, req, res) => {
             console.log(`[PROXY-OCR] Forwarding ${req.method} ${req.url} to OCR Service`);
